@@ -3,7 +3,13 @@ name = "niko"
 version = "0.1.0"
 authors = ["Vengarioth | Andreas Fischer <opensource@deviru.de>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT OR Apache-2.0"
+description = "the niko wasm game engine"
+homepage = "https://github.com/niko-rs/niko"
+repository = "https://github.com/niko-rs/niko"
+documentation = "https://docs.rs/niko"
+keywords = ["game", "engine", "framework", "gamedev"]
+categories = ["game-engines"]
+readme = "readme.md"
 
 [dependencies]
