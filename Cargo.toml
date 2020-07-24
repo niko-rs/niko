@@ -1,6 +1,6 @@
 [package]
 name = "niko"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Vengarioth | Andreas Fischer <opensource@deviru.de>"]
 edition = "2018"
 license = "MIT"
@@ -12,4 +12,24 @@ keywords = ["game", "engine", "framework", "gamedev"]
 categories = ["game-engines"]
 readme = "readme.md"
 
+[build]
+target = "wasm32-unknown-unknown"
+
 [dependencies]
+thiserror = "1.0"
+anyhow = "1.0"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "Document",
+  "Element",
+  "HtmlCanvasElement",
+  "WebGlBuffer",
+  "WebGlRenderingContext",
+  "WebGlProgram",
+  "WebGlShader",
+  "Window",
+]
