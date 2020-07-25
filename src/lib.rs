@@ -6,13 +6,29 @@ use web_sys::{
     WebGlRenderingContext,
     WebGlShader,
 };
+use std::panic;
 
 pub use error::*;
 
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 pub fn start() -> Result<(), JsValue> {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
+
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.get_element_by_id("canvas").unwrap();
     let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+
+    log!("{}", "test");
+
+    let closure = Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
+        log!("{:?}", event);
+    }) as Box<dyn FnMut(_)>);
+    canvas.add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())?;
 
     let context = canvas
         .get_context("webgl")?
