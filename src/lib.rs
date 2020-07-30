@@ -8,9 +8,11 @@ mod shader;
 mod buffer;
 
 mod rectangle;
-pub use rectangle::*;
 mod point;
+mod color;
+pub use rectangle::*;
 pub use point::*;
+pub use color::*;
 
 pub use context::*;
 pub use error::*;
@@ -39,7 +41,8 @@ pub enum Event {
     ImageLoaded(u32),
 }
 
-pub fn clear(context: &mut Context, r: f32, g: f32, b: f32, a: f32) {
+pub fn clear(context: &mut Context, color: Color) {
+    let (r, g, b, a) = color.into_normalized();
     context.rendering_context.clear_color(r, g, b, a);
     context.rendering_context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 }
@@ -109,7 +112,7 @@ pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
     Ok(())
 }
 
-pub fn draw_image(context: &mut Context, image: &Image) -> Result<(), Error> {
+pub fn draw_image(context: &mut Context, image: &Image, rectangle: Rectangle) -> Result<(), Error> {
     let gl = &mut context.rendering_context;
     gl.viewport(0, 0, 1280, 720);
     gl.use_program(Some(&context.shader.program));
