@@ -2,10 +2,10 @@ use crate::Point;
 
 #[derive(Debug, Clone)]
 pub struct Rectangle {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl Rectangle {
@@ -74,6 +74,19 @@ impl Rectangle {
             width,
             height,
         )
+    }
+
+    pub(crate) fn to_rendering_position(&self, bounds: &Self) -> (f32, f32, f32, f32) {
+        // TODO assume bounds x and y is 0 for now
+
+        let left = self.x as f32 / bounds.width as f32;
+        let right = (self.x + self.width) as f32 / bounds.width as f32;
+
+        
+        let top = self.y as f32 / bounds.height as f32;
+        let bottom = (self.y + self.height) as f32 / bounds.height as f32;
+
+        (left, right, top, bottom)
     }
 }
 

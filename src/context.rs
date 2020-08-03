@@ -1,31 +1,32 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::collections::VecDeque;
-use web_sys::{WebGl2RenderingContext};
-use crate::{Event, Images, shader::Shader, buffer::Buffer};
+use glow::Context as GlowContext;
+use crate::{
+    Event,
+    Images,
+    graphics::Shader,
+};
 
 pub struct Context {
-    pub(crate) rendering_context: WebGl2RenderingContext,
+    pub(crate) gl: GlowContext,
     pub(crate) event_queue: Rc<RefCell<VecDeque<Event>>>,
     pub(crate) images: Images,
-    pub(crate) shader: Shader,
-    pub(crate) buffer: Buffer,
+    pub(crate) sprite_shader: Shader,
 }
 
 impl Context {
     pub(crate) fn new(
-        rendering_context: WebGl2RenderingContext,
+        gl: GlowContext,
         event_queue: Rc<RefCell<VecDeque<Event>>>,
         images: Images,
-        shader: Shader,
-        buffer: Buffer,
+        sprite_shader: Shader,
     ) -> Self {
         Self {
-            rendering_context,
+            gl,
             event_queue,
             images,
-            shader,
-            buffer,
+            sprite_shader,
         }
     }
 }

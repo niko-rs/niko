@@ -1,9 +1,11 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
-use web_sys::{HtmlImageElement, WebGl2RenderingContext, WebGlTexture};
+use web_sys::{HtmlImageElement};
 use crate::{Error, NikoError, Event, event};
+use glow::{HasContext, WebTextureKey};
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Image {
     pub(crate) id: u32,
 }
@@ -18,7 +20,8 @@ impl Image {
 
 pub struct Images {
     images: HashMap<u32, HtmlImageElement>,
-    textures: HashMap<u32, WebGlTexture>,
+    textures: HashMap<u32, WebTextureKey>,
+    sizes: HashMap<u32, (u32, u32)>,
     next_id: u32,
 }
 
@@ -27,6 +30,7 @@ impl Images {
         Self {
             images: HashMap::new(),
             textures: HashMap::new(),
+            sizes: HashMap::new(),
             next_id: 0,
         }
     }
@@ -48,39 +52,49 @@ impl Images {
         Ok(Image::new(id))
     }
 
-    pub(crate) fn finish_loading(&mut self, id: u32, gl: &mut WebGl2RenderingContext) -> Result<(), Error> {
-
+    pub(crate) fn finish_loading(&mut self, id: u32, gl: &glow::Context) -> Result<(), Error> {
         let image = self.images.get(&id).unwrap();
-
-        let texture = gl.create_texture().unwrap();
-        gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&texture));
-
         let width = image.width();
         let height = image.height();
+        self.sizes.insert(id, (width, height));
 
-        gl.tex_image_2d_with_u32_and_u32_and_html_image_element(
-            WebGl2RenderingContext::TEXTURE_2D, // target
-            0, // level
-            WebGl2RenderingContext::RGBA as i32, // internalformat ???
-            WebGl2RenderingContext::RGBA, // format
-            WebGl2RenderingContext::UNSIGNED_BYTE, // type
-            &image, // object
-        ).unwrap();
+        let texture = unsafe {
+            let texture = gl.create_texture()
+                .map_err(|error| NikoError::PlatformError(error))?;
 
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_S, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_WRAP_T, WebGl2RenderingContext::CLAMP_TO_EDGE as i32);
-        gl.tex_parameteri(WebGl2RenderingContext::TEXTURE_2D, WebGl2RenderingContext::TEXTURE_MIN_FILTER, WebGl2RenderingContext::LINEAR as i32);
+            gl.bind_texture(glow::TEXTURE_2D, Some(texture));
+            gl.tex_image_2d_with_html_image(
+                glow::TEXTURE_2D,
+                0,
+                glow::RGBA as i32,
+                glow::RGBA,
+                glow::UNSIGNED_BYTE,
+                &image,
+            );
+
+            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
+            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
+
+            texture
+        };
 
         self.textures.insert(id, texture);
 
         Ok(())
     }
 
-    pub(crate) fn bind_texture(&mut self, id: u32, gl: &mut WebGl2RenderingContext) -> Result<(), Error> {
-        if let Some(texture) = self.textures.get(&id) {
-            gl.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(texture));
+    pub fn find_texture(&self, image: Image) -> Option<WebTextureKey> {
+        match self.textures.get(&image.id) {
+            Some(texture) => Some(*texture),
+            None => None,
         }
+    }
 
-        Ok(())
+    pub fn find_size(&self, image: Image) -> Option<(u32, u32)> {
+        match self.sizes.get(&image.id) {
+            Some((width, height)) => Some((*width, *height)),
+            None => None,
+        }
     }
 }

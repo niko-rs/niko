@@ -4,15 +4,18 @@ mod game;
 mod images;
 mod key;
 mod log;
-mod shader;
-mod buffer;
-
+pub mod graphics;
+mod resources;
 mod rectangle;
 mod point;
 mod color;
+mod collections;
+mod random;
 pub use rectangle::*;
 pub use point::*;
 pub use color::*;
+pub use graphics::SpriteBatch;
+pub use random::*;
 
 pub use context::*;
 pub use error::*;
@@ -26,13 +29,14 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::convert::FromWasmAbi;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::panic;
 use std::collections::VecDeque;
 use web_sys::{
     WebGl2RenderingContext,
     KeyboardEvent,
     EventTarget,
 };
+use glow::Context as GlowContext;
+use glow::HasContext;
 
 #[derive(Debug)]
 pub enum Event {
@@ -43,8 +47,10 @@ pub enum Event {
 
 pub fn clear(context: &mut Context, color: Color) {
     let (r, g, b, a) = color.into_normalized();
-    context.rendering_context.clear_color(r, g, b, a);
-    context.rendering_context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+    unsafe {
+        context.gl.clear_color(r, g, b, a);
+        context.gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
+    };
 }
 
 pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
@@ -75,18 +81,27 @@ pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
     }).unwrap();
     closure.forget();
 
-    let mut gl = canvas
+    let gl = canvas
         .get_context("webgl2")?
         .unwrap()
         .dyn_into::<WebGl2RenderingContext>()?;
     
-    let shader = shader::create_shader(&mut gl).expect("could not create shader");
-    let buffer = buffer::create_buffer(&mut gl).expect("could not create buffer");
-
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
 
-    let mut context = Context::new(gl, event_queue, Images::new(), shader, buffer);
+    let gl = GlowContext::from_webgl2_context(gl);
+    let sprite_shader = crate::graphics::Shader::create(
+        &gl,
+        crate::resources::SPRITE_BATCH_VERTEX,
+        crate::resources::SPRITE_BATCH_FRAGMENT
+    ).expect("could not create sprite shader");
+
+    unsafe {
+        gl.viewport(0, 0, 1280, 720);
+    }
+
+    
+    let mut context = Context::new(gl, event_queue, Images::new(), sprite_shader);
 
     game.initialize(&mut context).expect("Error while initializing");
 
@@ -95,48 +110,27 @@ pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
         while let Some(event) = context.event_queue.borrow_mut().pop_front() {
             match event {
                 Event::ImageLoaded(id) => {
-                    context.images.finish_loading(id, &mut context.rendering_context).expect("could not finish loading an image");
+                    context.images.finish_loading(id, &mut context.gl).expect("could not finish loading an image");
                 }
                 _ => {},
             }
         }
 
         game.update(&mut context).expect("Error while updating");
+
+        unsafe {
+            context.gl.viewport(0, 0, 1280, 720);
+        }
         game.draw(&mut context).expect("Error while drawing");
+        // unsafe {
+        //     clear(&mut context, Color::new(0, 255, 0, 255));
+        //     graphics::test_draw(&context.gl, &debug_shader).expect("could not draw");
+        // }
 
         request_animation_frame(f.borrow().as_ref().unwrap());
     }) as Box<dyn FnMut()>));
 
     request_animation_frame(g.borrow().as_ref().unwrap());
-
-    Ok(())
-}
-
-pub fn draw_image(context: &mut Context, image: &Image, rectangle: Rectangle) -> Result<(), Error> {
-    let gl = &mut context.rendering_context;
-    gl.viewport(0, 0, 1280, 720);
-    gl.use_program(Some(&context.shader.program));
-
-    gl.enable(WebGl2RenderingContext::BLEND);
-    gl.blend_func(WebGl2RenderingContext::SRC_ALPHA, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
-
-    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&context.buffer.position_buffer));
-    gl.vertex_attrib_pointer_with_i32(context.shader.position_attribute, 4, WebGl2RenderingContext::FLOAT, false, 0, 0);
-    gl.enable_vertex_attrib_array(context.shader.position_attribute);
-
-    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&context.buffer.uv_buffer));
-    gl.vertex_attrib_pointer_with_i32(context.shader.uv_attribute, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
-    gl.enable_vertex_attrib_array(context.shader.uv_attribute);
-
-    gl.bind_buffer(WebGl2RenderingContext::ELEMENT_ARRAY_BUFFER, Some(&context.buffer.index_buffer));
-
-    gl.active_texture(WebGl2RenderingContext::TEXTURE0);
-
-    context.images.bind_texture(image.id, gl).unwrap();
-
-    gl.uniform1i(Some(&context.shader.sampler_uniform), 0);
-
-    gl.draw_elements_with_i32(WebGl2RenderingContext::TRIANGLES, 6, WebGl2RenderingContext::UNSIGNED_SHORT, 0);
 
     Ok(())
 }

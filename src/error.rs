@@ -1,5 +1,4 @@
 use thiserror::*;
-use wasm_bindgen::prelude::*;
 
 pub type Error = anyhow::Error;
 
