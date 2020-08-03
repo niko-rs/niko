@@ -1,14 +1,15 @@
-use glow::{WebBufferKey, HasContext};
+use glow::HasContext;
 use crate::{
     Error,
     NikoError,
     graphics::{
         BufferType,
         BufferUsage,
+        BufferId,
     },
 };
 
-unsafe fn create_buffer(gl: &glow::Context, target: u32, usage: u32, data: &[u8]) -> Result<WebBufferKey, Error> {
+unsafe fn create_buffer(gl: &glow::Context, target: u32, usage: u32, data: &[u8]) -> Result<BufferId, Error> {
     let buffer = gl.create_buffer()
         .map_err(|error| NikoError::PlatformError(error))?;
 
@@ -20,7 +21,7 @@ unsafe fn create_buffer(gl: &glow::Context, target: u32, usage: u32, data: &[u8]
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Buffer {
-    inner: WebBufferKey,
+    inner: BufferId,
 }
 
 impl Buffer {
@@ -32,7 +33,7 @@ impl Buffer {
         })
     }
 
-    pub(crate) fn get_inner(&self) -> WebBufferKey {
+    pub(crate) fn get_inner(&self) -> BufferId {
         self.inner
     }
 }

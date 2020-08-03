@@ -15,3 +15,9 @@ pub use shader::*;
 pub use sprite_batch::*;
 pub use error::*;
 use check_error::*;
+
+pub type ShaderId = <glow::Context as glow::HasContext>::Shader;
+pub type ProgramId = <glow::Context as glow::HasContext>::Program;
+pub type BufferId = <glow::Context as glow::HasContext>::Buffer;
+pub type TextureId = <glow::Context as glow::HasContext>::Texture;
+pub type UniformLocationId = <glow::Context as glow::HasContext>::UniformLocation;

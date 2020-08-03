@@ -1,7 +1,7 @@
-use crate::{Error, NikoError};
-use glow::*;
+use crate::{Error, NikoError, graphics::TextureId};
+use glow::HasContext;
 
-unsafe fn create_texture(gl: &glow::Context, width: u32, height: u32, data: &[u8]) -> Result<WebTextureKey, Error> {
+unsafe fn create_texture(gl: &glow::Context, width: u32, height: u32, data: &[u8]) -> Result<TextureId, Error> {
     let texture = gl.create_texture()
         .map_err(|error| NikoError::PlatformError(error))?;
 
@@ -28,7 +28,7 @@ unsafe fn create_texture(gl: &glow::Context, width: u32, height: u32, data: &[u8
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Image {
-    pub(crate) inner: WebTextureKey,
+    pub(crate) inner: TextureId,
 }
 
 impl Image {

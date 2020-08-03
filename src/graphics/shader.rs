@@ -1,5 +1,5 @@
-use crate::{Error, NikoError, graphics::{ShaderError, check_error}};
-use glow::{WebShaderKey, WebProgramKey, HasContext};
+use crate::{Error, NikoError, graphics::{ShaderError, check_error, ShaderId, ProgramId}};
+use glow::HasContext;
 use std::collections::HashMap;
 
 macro_rules! log {
@@ -8,7 +8,7 @@ macro_rules! log {
     }
 }
 
-unsafe fn compile_shader(gl: &glow::Context, source: &str, kind: u32) -> Result<WebShaderKey, Error> {
+unsafe fn compile_shader(gl: &glow::Context, source: &str, kind: u32) -> Result<ShaderId, Error> {
     let shader = gl.create_shader(kind)
         .map_err(|error| NikoError::PlatformError(error))?;
 
@@ -24,7 +24,7 @@ unsafe fn compile_shader(gl: &glow::Context, source: &str, kind: u32) -> Result<
     Ok(shader)
 }
 
-unsafe fn reflect_attributes(gl: &glow::Context, program: WebProgramKey) -> HashMap<String, u32> {
+unsafe fn reflect_attributes(gl: &glow::Context, program: ProgramId) -> HashMap<String, u32> {
     let mut attributes = HashMap::new();
     let attribute_count = gl.get_active_attributes(program);
     for index in 0..attribute_count {
@@ -39,7 +39,7 @@ unsafe fn reflect_attributes(gl: &glow::Context, program: WebProgramKey) -> Hash
     attributes
 }
 
-unsafe fn reflect_uniforms(gl: &glow::Context, program: WebProgramKey) -> HashMap<String, glow::UniformLocation> {
+unsafe fn reflect_uniforms(gl: &glow::Context, program: ProgramId) -> HashMap<String, glow::UniformLocation> {
     let mut uniforms = HashMap::new();
     let uniform_count = gl.get_active_uniforms(program);
     for index in 0..uniform_count {
@@ -56,7 +56,7 @@ unsafe fn reflect_uniforms(gl: &glow::Context, program: WebProgramKey) -> HashMa
     uniforms
 }
 
-unsafe fn build_program(gl: &glow::Context, vertex_shader_source: &str, fragment_shader_source: &str) -> Result<WebProgramKey, Error> {
+unsafe fn build_program(gl: &glow::Context, vertex_shader_source: &str, fragment_shader_source: &str) -> Result<ProgramId, Error> {
     let vertex_shader = compile_shader(gl, vertex_shader_source, glow::VERTEX_SHADER)?;
     let fragment_shader = compile_shader(gl, fragment_shader_source, glow::FRAGMENT_SHADER)?;
     
@@ -85,7 +85,7 @@ unsafe fn build_program(gl: &glow::Context, vertex_shader_source: &str, fragment
 
 #[derive(Debug)]
 pub struct Shader {
-    inner: WebProgramKey,
+    inner: ProgramId,
     attributes: HashMap<String, u32>,
     uniforms: HashMap<String, glow::UniformLocation>,
 }
@@ -133,7 +133,7 @@ impl Shader {
         result
     }
 
-    pub(crate) fn get_inner(&self) -> WebProgramKey {
+    pub(crate) fn get_inner(&self) -> ProgramId {
         self.inner
     }
 }

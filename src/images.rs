@@ -2,8 +2,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use web_sys::{HtmlImageElement};
-use crate::{Error, NikoError, Event, event};
-use glow::{HasContext, WebTextureKey};
+use crate::{Error, NikoError, Event, event, graphics::TextureId};
+use glow::HasContext;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Image {
@@ -20,7 +20,7 @@ impl Image {
 
 pub struct Images {
     images: HashMap<u32, HtmlImageElement>,
-    textures: HashMap<u32, WebTextureKey>,
+    textures: HashMap<u32, TextureId>,
     sizes: HashMap<u32, (u32, u32)>,
     next_id: u32,
 }
@@ -52,6 +52,7 @@ impl Images {
         Ok(Image::new(id))
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub(crate) fn finish_loading(&mut self, id: u32, gl: &glow::Context) -> Result<(), Error> {
         let image = self.images.get(&id).unwrap();
         let width = image.width();
@@ -84,7 +85,12 @@ impl Images {
         Ok(())
     }
 
-    pub fn find_texture(&self, image: Image) -> Option<WebTextureKey> {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn finish_loading(&mut self, id: u32, gl: &glow::Context) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    pub fn find_texture(&self, image: Image) -> Option<TextureId> {
         match self.textures.get(&image.id) {
             Some(texture) => Some(*texture),
             None => None,

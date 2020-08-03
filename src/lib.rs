@@ -53,6 +53,21 @@ pub fn clear(context: &mut Context, color: Color) {
     };
 }
 
+#[cfg(target_arch = "wasm32")]
+fn create_context(canvas: web_sys::HtmlCanvasElement) -> Result<glow::Context, JsValue> {
+    let gl = canvas
+        .get_context("webgl2")?
+        .unwrap()
+        .dyn_into::<WebGl2RenderingContext>()?;
+
+    Ok(GlowContext::from_webgl2_context(gl))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn create_context(canvas: web_sys::HtmlCanvasElement) -> Result<glow::Context, JsValue> {
+    unimplemented!()
+}
+
 pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.get_element_by_id("canvas").unwrap();
@@ -81,15 +96,11 @@ pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
     }).unwrap();
     closure.forget();
 
-    let gl = canvas
-        .get_context("webgl2")?
-        .unwrap()
-        .dyn_into::<WebGl2RenderingContext>()?;
+    let gl = create_context(canvas)?;
     
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
 
-    let gl = GlowContext::from_webgl2_context(gl);
     let sprite_shader = crate::graphics::Shader::create(
         &gl,
         crate::resources::SPRITE_BATCH_VERTEX,
