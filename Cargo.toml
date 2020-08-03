@@ -1,6 +1,6 @@
 [package]
 name = "niko"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Vengarioth | Andreas Fischer <opensource@deviru.de>"]
 edition = "2018"
 license = "MIT"
@@ -41,4 +41,6 @@ features = [
   "WebGlTexture",
   "Window",
   "HtmlImageElement",
+  "Performance",
+  "PerformanceTiming",
 ]

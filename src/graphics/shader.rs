@@ -97,8 +97,6 @@ impl Shader {
         let attributes = unsafe { reflect_attributes(gl, inner) };
         let uniforms = unsafe { reflect_uniforms(gl, inner) };
 
-        check_error(gl)?;
-
         Ok(Self {
             inner,
             attributes,

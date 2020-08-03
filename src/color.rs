@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub, Mul, Div};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Color {
     r: u8,
     g: u8,

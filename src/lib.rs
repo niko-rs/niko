@@ -11,11 +11,15 @@ mod point;
 mod color;
 mod collections;
 mod random;
+mod input;
+mod metrics;
+use metrics::*;
 pub use rectangle::*;
 pub use point::*;
 pub use color::*;
 pub use graphics::SpriteBatch;
 pub use random::*;
+pub use input::*;
 
 pub use context::*;
 pub use error::*;
@@ -76,7 +80,7 @@ pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
     
     // Key down events
     let event_queue_handle = Rc::clone(&event_queue);
-    let closure = event(&canvas, "keydown", move |event: KeyboardEvent| {
+    let closure = event(&document, "keydown", move |event: KeyboardEvent| {
         event.prevent_default();
         event.stop_propagation();
         if let Some(key) = into_key(event) {
@@ -87,7 +91,7 @@ pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
 
     // Key up events
     let event_queue_handle = Rc::clone(&event_queue);
-    let closure = event(&canvas, "keyup", move |event: KeyboardEvent| {
+    let closure = event(&document, "keyup", move |event: KeyboardEvent| {
         event.prevent_default();
         event.stop_propagation();
         if let Some(key) = into_key(event) {
@@ -111,32 +115,42 @@ pub fn run(mut game: Box<dyn Game>) -> Result<(), JsValue> {
         gl.viewport(0, 0, 1280, 720);
     }
 
+    let input = Input::new();
+    let metrics = Metrics::new();
     
-    let mut context = Context::new(gl, event_queue, Images::new(), sprite_shader);
+    let mut context = Context::new(gl, event_queue, Images::new(), input, metrics, sprite_shader);
 
     game.initialize(&mut context).expect("Error while initializing");
 
     // game loop
     *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+        context.metrics.reset();
         while let Some(event) = context.event_queue.borrow_mut().pop_front() {
             match event {
                 Event::ImageLoaded(id) => {
                     context.images.finish_loading(id, &mut context.gl).expect("could not finish loading an image");
-                }
-                _ => {},
+                },
+                Event::KeyDown(key) => {
+                    context.input.set_key(key);
+                },
+                Event::KeyUp(key) => {
+                    context.input.reset_key(key);
+                },
             }
         }
 
+        context.metrics.start_update();
         game.update(&mut context).expect("Error while updating");
+        context.metrics.end_update();
 
         unsafe {
             context.gl.viewport(0, 0, 1280, 720);
         }
+        context.metrics.start_draw();
         game.draw(&mut context).expect("Error while drawing");
-        // unsafe {
-        //     clear(&mut context, Color::new(0, 255, 0, 255));
-        //     graphics::test_draw(&context.gl, &debug_shader).expect("could not draw");
-        // }
+        context.metrics.end_draw();
+
+        context.metrics.debug_print();
 
         request_animation_frame(f.borrow().as_ref().unwrap());
     }) as Box<dyn FnMut()>));
