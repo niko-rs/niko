@@ -4,10 +4,12 @@ use crate::{
     Context,
     Image,
     Color,
+    Point,
     graphics::{
         Buffer,
         BufferType,
         BufferUsage,
+        Sprite,
     },
 };
 use glow::HasContext;
@@ -91,8 +93,59 @@ impl SpriteBatch {
         }
     }
 
-    pub fn draw_sprite(&mut self, sprite: Image, source: Rectangle, target: Rectangle, color: Color) {
-        // TODO expose color
+    pub fn add_sprite(&mut self, sprite: &Sprite, position: Point) {
+        let target = Rectangle::new(
+            position.x,
+            position.y,
+            sprite.area.width,
+            sprite.area.height,
+        );
+
+        let color = Color::new(255, 255, 255, 255);
+        
+        self.instances.push(SpriteInstance {
+            sprite: sprite.image,
+            source: sprite.area.clone(),
+            target,
+            color,
+        });
+    }
+
+    pub fn add_colored_sprite(&mut self, sprite: &Sprite, position: Point, color: Color) {
+        let target = Rectangle::new(
+            position.x,
+            position.y,
+            sprite.area.width,
+            sprite.area.height,
+        );
+
+        self.instances.push(SpriteInstance {
+            sprite: sprite.image,
+            source: sprite.area.clone(),
+            target,
+            color,
+        });
+    }
+
+    pub fn add_scaled_sprite(&mut self, sprite: &Sprite, position: Point, scale: i32) {
+        let target = Rectangle::new(
+            position.x,
+            position.y,
+            sprite.area.width * scale,
+            sprite.area.height * scale,
+        );
+
+        let color = Color::new(255, 255, 255, 255);
+
+        self.instances.push(SpriteInstance {
+            sprite: sprite.image,
+            source: sprite.area.clone(),
+            target,
+            color,
+        });
+    }
+
+    pub fn add_raw(&mut self, sprite: Image, source: Rectangle, target: Rectangle, color: Color) {
         self.instances.push(SpriteInstance {
             sprite,
             source,
@@ -121,7 +174,7 @@ impl SpriteBatch {
                 Rectangle::new(0, 0, 1, 1)
             };
 
-            let (source_left, source_right, source_top, source_bottom) = instance.source.to_rendering_position(&image_size);
+            let (source_left, source_right, source_top, source_bottom) = instance.source.to_uv_position(&image_size);
             let (target_left, target_right, target_top, target_bottom) = instance.target.to_rendering_position(&canvas_size);
 
             let a = dynamic_buffer.push_vertex((target_left - 0.5) * 2.0, (target_bottom - 0.5) * 2.0, source_left, source_top);

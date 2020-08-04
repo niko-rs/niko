@@ -76,6 +76,18 @@ impl Rectangle {
         )
     }
 
+    pub(crate) fn to_uv_position(&self, bounds: &Self) -> (f32, f32, f32, f32) {
+        // TODO assume bounds x and y is 0 for now
+
+        let left = self.x as f32 / bounds.width as f32;
+        let right = (self.x + self.width) as f32 / bounds.width as f32;
+        
+        let top = self.y as f32 / bounds.height as f32;
+        let bottom = (self.y + self.height) as f32 / bounds.height as f32;
+
+        (left, right, top, bottom)
+    }
+
     pub(crate) fn to_rendering_position(&self, bounds: &Self) -> (f32, f32, f32, f32) {
         // TODO assume bounds x and y is 0 for now
 

@@ -17,7 +17,6 @@ use metrics::*;
 pub use rectangle::*;
 pub use point::*;
 pub use color::*;
-pub use graphics::SpriteBatch;
 pub use random::*;
 pub use input::*;
 
@@ -27,6 +26,7 @@ pub use log::*;
 pub use game::*;
 pub use images::*;
 pub use key::*;
+pub use graphics::{Sprite, SpriteBatch, load_sprite, load_sprite_sheet};
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
